@@ -1,0 +1,8 @@
+livekit-agents[google]~=1.2.0
+livekit-plugins-noise-cancellation~=0.2
+livekit-api
+python-dotenv
+requests
+flask
+flask-cors
+spotipy
