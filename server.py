@@ -1,9 +1,3 @@
-"""
-Token server for Tempest AI frontend.
-Serves the frontend and provides LiveKit access tokens.
-Run: python server.py
-"""
-
 import os
 import uuid
 from datetime import timedelta
@@ -12,14 +6,15 @@ from flask_cors import CORS
 from livekit.api import AccessToken, VideoGrants
 from dotenv import load_dotenv
 
-load_dotenv(".env.local")
+load_dotenv()
 
 app = Flask(__name__, static_folder="frontend", static_url_path="")
 CORS(app)
 
-LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY")
+LIVEKIT_API_KEY    = os.getenv("LIVEKIT_API_KEY")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET")
-LIVEKIT_URL = os.getenv("LIVEKIT_URL")
+LIVEKIT_URL        = os.getenv("LIVEKIT_URL")
+ROOM_NAME          = "tempest-room"   # fixed — no user input needed
 
 
 @app.route("/")
@@ -29,8 +24,6 @@ def index():
 
 @app.route("/api/token")
 def get_token():
-    """Generate a LiveKit access token for a user."""
-    room_name = request.args.get("room", "tempest-room")
     participant_name = request.args.get("name", f"user-{uuid.uuid4().hex[:6]}")
 
     if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET:
@@ -40,24 +33,13 @@ def get_token():
         AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
         .with_identity(participant_name)
         .with_name(participant_name)
-        .with_grants(
-            VideoGrants(
-                room_join=True,
-                room=room_name,
-                can_publish=True,
-                can_subscribe=True,
-            )
-        )
+        .with_grants(VideoGrants(room_join=True, room=ROOM_NAME,
+                                 can_publish=True, can_subscribe=True))
         .with_ttl(timedelta(hours=2))
         .to_jwt()
     )
 
-    return jsonify({
-        "token": token,
-        "url": LIVEKIT_URL,
-        "room": room_name,
-        "participant": participant_name,
-    })
+    return jsonify({"token": token, "url": LIVEKIT_URL, "room": ROOM_NAME})
 
 
 @app.route("/api/health")
